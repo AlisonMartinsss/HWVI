@@ -286,10 +286,19 @@
                 this.transacaoDetalhes = {}
             },
             carregarLista() {
-                if (this.auth.admin == 0) {
-                    axios.get('http://localhost:8000/api/tarefa?filtro=user_id:=:'+ this.auth.id)
+                let url = '/api/tarefa';
+                if (this.auth.admin === 0) {
+                    url += '?filtro=user_id:=:' + this.auth.id;
+                }
+
+                axios.get(url)
                     .then(response => {
                         this.tarefas = response.data;
+
+                        if ($.fn.DataTable.isDataTable('#tarefa-table')) {
+                            $('#tarefa-table').DataTable().clear().destroy();
+                        }
+
                         this.table = $('#tarefa-table').DataTable({
                             dom: '<"row d-flex align-items-end justify-content-between gap-2 my-2"<"col-md-2"l><"col-md-8"f><"col-md-1"B>>rt<"d-flex flex-column gap-1"<"d-flex justify-content-center"i><"d-flex justify-content-center"p>>',
                             createdRow: function( nRow, aData ) {
@@ -300,86 +309,9 @@
                                 url: 'https://cdn.datatables.net/plug-ins/2.0.3/i18n/pt-BR.json',
                             },
                             buttons: [
-                                {
-                                    extend: 'csv',
-                                    className: 'btn btn-success',
-                                    charset: 'utf-8',
-                                    fieldSeparator: ';',
-                                    fieldBoundary: '',
-                                    bom: true,
-                                    filename: 'Tarefas',
-                                    exportOptions: {
-                                        columns: ':not(.no-print)'
-                                    }
-                                }
+                                { extend: 'csv', className: 'btn btn-success', charset: 'utf-8', fieldSeparator: ';', fieldBoundary: '', bom: true, filename: 'Tarefas'},
                             ],
-                            data: [],
-                            columns: [
-                                { data: 'id' },
-                                { data: 'data_abertura' },
-                                { data: 'assunto' },
-                                { data: 'prioridade' },
-                                { data: 'data_fechamento' },
-                                {
-                                    orderable: false,
-                                    data: null,
-                                    defaultContent: 
-                                    `<div class="d-flex justify-content-center gap-1">
-                                        <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#visualizar-tarefa" @click="setStore(data)">
-                                            <i class="fa-solid fa-eye"></i>
-                                        </button>
-                                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editar-tarefa" @click="setStore(data)">
-                                            <i class="fa-solid fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#remover-tarefa" @click="setStore(data)">
-                                            <i class="fa-solid fa-trash"></i>
-                                        </button>
-                                    </div>`,
-                                    className: 'no-print'
-                                },
-                                { data: 'descricao', className: 'print-only', visible: false }
-                            ]
-                        });
-                        this.table.on('click', 'button', (e) => {
-                            let rowData = this.table.row($(e.target).closest('tr')).data();
-                            if (rowData) {
-                                this.setStore(rowData);
-                            }
-                        });
-                        this.table.clear().rows.add(this.tarefas).draw();
-                        
-                    })
-                    .catch(error => {
-                        console.error('Ocorreu um erro:', error);
-                    })
-                } else {
-                    axios.get('http://localhost:8000/api/tarefa')
-                    .then(response => {
-                        this.tarefas = response.data;
-                        this.table = $('#tarefa-table').DataTable({
-                            dom: '<"row d-flex align-items-end justify-content-between gap-2 my-2"<"col-md-2"l><"col-md-8"f><"col-md-1"B>>rt<"d-flex flex-column gap-1"<"d-flex justify-content-center"i><"d-flex justify-content-center"p>>',
-                            createdRow: function( nRow, aData ) {
-                                $(nRow).attr('handle', aData["HANDLE"]);
-                            },
-                            language: {
-                                lengthMenu: "Resultados p/ página _MENU_",
-                                url: 'https://cdn.datatables.net/plug-ins/2.0.3/i18n/pt-BR.json',
-                            },
-                            buttons: [
-                                {
-                                    extend: 'csv',
-                                    className: 'btn btn-success',
-                                    charset: 'utf-8',
-                                    fieldSeparator: ';',
-                                    fieldBoundary: '',
-                                    bom: true,
-                                    filename: 'Tarefas',
-                                    exportOptions: {
-                                        columns: ':not(.no-print)'
-                                    }
-                                }
-                            ],
-                            data: [],
+                            data: this.tarefas,
                             columns: [
                                 { data: 'id' },
                                 { data: 'user.name' },
@@ -405,22 +337,24 @@
                                     className: 'no-print'
                                 },
                                 { data: 'descricao', className: 'print-only', visible: false }
-                            ]
+                            ],
+                            initComplete: function() {
+                                var label = $('<label>Exportar:</label>');
+                                $('.dt-buttons').prepend(label);
+                                $('.dt-buttons button').wrapAll('<div class="d-flex gap-1"></div>');
+                            }
                         });
+
                         this.table.on('click', 'button', (e) => {
                             let rowData = this.table.row($(e.target).closest('tr')).data();
                             if (rowData) {
                                 this.setStore(rowData);
                             }
                         });
-                        this.table.clear().rows.add(this.tarefas).draw();
-                        
                     })
                     .catch(error => {
                         console.error('Ocorreu um erro:', error);
-                    })
-                }
-                
+                    });
             },
             salvar() {
                 let formData = new FormData();
