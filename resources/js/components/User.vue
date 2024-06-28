@@ -241,6 +241,11 @@
                 axios.get('/api/user')
                     .then(response => {
                         this.users = response.data;
+
+                        if ($.fn.DataTable.isDataTable('#user-table')) {
+                            $('#user-table').DataTable().clear().destroy();
+                        }
+
                         this.table = $('#user-table').DataTable({
                             dom: '<"row d-flex align-items-end justify-content-between gap-2 my-2"<"col-md-2"l><"col-md-8"f><"col-md-1"B>>rt<"d-flex flex-column gap-1"<"d-flex justify-content-center"i><"d-flex justify-content-center"p>>',
                             createdRow: function( nRow, aData ) {
@@ -264,7 +269,7 @@
                                     }
                                 }
                             ],
-                            data: [],
+                            data: this.users,
                             columns: [
                                 { data: 'id' },
                                 { data: 'name' },
@@ -307,20 +312,24 @@
                                     </div>`,
                                     className: 'no-print'
                                 }
-                            ]
+                            ],
+                            initComplete: function() {
+                                var label = $('<label>Exportar:</label>');
+                                $('.dt-buttons').prepend(label);
+                                $('.dt-buttons button').wrapAll('<div class="d-flex gap-1"></div>');
+                            }
                         });
+
                         this.table.on('click', 'button', (e) => {
                             let rowData = this.table.row($(e.target).closest('tr')).data();
                             if (rowData) {
                                 this.setStore(rowData);
                             }
                         });
-                        this.table.clear().rows.add(this.users).draw();
-                        
                     })
                     .catch(error => {
                         console.error('Ocorreu um erro:', error);
-                    })
+                    });
             },
             salvar() {
                 let url = '/api/user';
